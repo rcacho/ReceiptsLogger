@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="7701" systemVersion="14D136" minimumToolsVersion="Automatic" macOSVersion="Automatic" iOSVersion="Automatic">
+    <entity name="Receipts" representedClassName="Receipts" syncable="YES">
+        <attribute name="amount" optional="YES" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="receiptDescription" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="timeStamp" optional="YES" attributeType="Date" syncable="YES"/>
+        <relationship name="relationship" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Tags" inverseName="relationship" inverseEntity="Tags" syncable="YES"/>
+    </entity>
+    <entity name="Tags" representedClassName="Tags" syncable="YES">
+        <attribute name="tagName" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="relationship" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Receipts" inverseName="relationship" inverseEntity="Receipts" syncable="YES"/>
+    </entity>
+    <elements>
+        <element name="Receipts" positionX="-45" positionY="0" width="128" height="103"/>
+        <element name="Tags" positionX="160" positionY="180" width="128" height="73"/>
+    </elements>
+</model>
