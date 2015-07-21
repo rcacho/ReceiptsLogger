@@ -31,6 +31,8 @@
 
 @property NSString *tagName;
 
+@property NSMutableSet *selectedTags;
+
 @end
 
 @implementation CreatorViewController
@@ -41,6 +43,7 @@
     self.tags = [[Taghandler alloc] init];
     self.tags.viewController = self;
     [self.tags fetch];
+    self.selectedTags = [[NSMutableSet alloc] init];
 }
 
 #pragma mark - Table View
@@ -65,7 +68,12 @@
 }
 
 -(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    // fill in later
+    [self.selectedTags addObject:[self.tags objectAtIndex:indexPath]];
+    
+    // should make it so that the row goes darker in colour
+    // how do I make sure that this only affects the row for this object?
+    // could have it so that if an object is the list of selected objects
+    // the row will be a darker colour than normal
 }
 
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -112,9 +120,11 @@
 - (void)textFieldDidEndEditing:(UITextField *)textField {
     if ([textField isEqual:self.receiptDescriptonTextField]) {
         self.receiptDescripton = textField.text;
+        NSLog(@"%@",self.receiptDescripton);
         
     } else if ([textField isEqual:self.receiptAmountTextField]) {
         self.receiptAmount = [textField.text doubleValue];
+         NSLog(@"%f",[self.receiptAmountTextField.text doubleValue]);
         
     } else if ([textField isEqual:self.tagNameTextField]) {
         self.tagName = textField.text;
@@ -130,9 +140,11 @@
     CoreDataStack *theCoreDataStack = [CoreDataStack defaultStack];
     Receipts *aReceipt = [NSEntityDescription insertNewObjectForEntityForName:@"Receipts" inManagedObjectContext:
      theCoreDataStack.managedObjectContext];
+    
     aReceipt.receiptDescription = self.receiptDescripton;
     aReceipt.amount = self.receiptAmount;
     aReceipt.timeStamp = [[NSDate date] timeIntervalSince1970];
+    aReceipt.relationship = [[NSSet alloc] initWithSet:self.selectedTags];
     
     [self.delegate changedObject:@"receipts"];
     

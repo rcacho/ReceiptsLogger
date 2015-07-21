@@ -7,10 +7,11 @@
 //
 
 #import "ReceiptHandler.h"
+#import "Tags.h"
 
-@interface ReceiptHandler () <NSFetchedResultsControllerDelegate>
+@interface ReceiptHandler ()
 
-@property (nonatomic) NSFetchedResultsController *fetchedResultsController;
+@property NSDictionary *receiptsCollection;
 
 @end
 
@@ -24,20 +25,27 @@
     return self;
 }
 
-#pragma mark - fetchedResultsController
+#pragma mark - fetching results
 
-- (NSFetchedResultsController *)fetchedResultsController {
-    if (_fetchedResultsController != nil) {
-        return _fetchedResultsController;
-    }
-    CoreDataStack *theCoreDateStack = [CoreDataStack defaultStack];
+- (void)fetch {
+    NSArray *fetchedObject = [self requestObjects];
+    [self arrangeSections:fetchedObject];
+    
+}
+
+
+- (NSArray *)requestObjects {
+    CoreDataStack *theCoreDataStack = [CoreDataStack defaultStack];
+    NSManagedObjectContext *managedObjectContext = theCoreDataStack.managedObjectContext;
+    
     NSFetchRequest *fetchRequest = [self entryListFetchRequest];
-    
-    // how do I section name by a relationship??
-    _fetchedResultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:fetchRequest managedObjectContext:theCoreDateStack.managedObjectContext sectionNameKeyPath:@"relationship" cacheName:nil];
-    _fetchedResultsController.delegate = self;
-    
-    return _fetchedResultsController;
+    NSError *error;
+    NSArray *fetchedObjects = [managedObjectContext executeFetchRequest:fetchRequest error:&error];
+    if (fetchedObjects == nil)
+    {
+        // Deal with error...
+    }
+    return fetchedObjects;
 }
 
 - (NSFetchRequest *)entryListFetchRequest {
@@ -46,48 +54,80 @@
     return fetchRequest;
 }
 
-- (void)controller:(NSFetchedResultsController *)controller didChangeObject:(id)anObject atIndexPath:(NSIndexPath *)indexPath forChangeType:(NSFetchedResultsChangeType)type newIndexPath:(NSIndexPath *)newIndexPath {
-    // call the controller to reload the table view
-    [self.viewController reloadData];
-}
-
-
-- (void)controller:(NSFetchedResultsController *)controller didChangeSection:(id<NSFetchedResultsSectionInfo>)sectionInfo atIndex:(NSUInteger)sectionIndex forChangeType:(NSFetchedResultsChangeType)type {
-    // call the controller to reload the table view
-    [self.viewController reloadData];
-}
-
-- (NSString *)getTitleForHeaderInSection:(NSInteger)section {
-    return [self.fetchedResultsController.sections[section] name];
-}
-
-- (void)fetch {
-    [self.fetchedResultsController performFetch:nil];
-}
-
 - (void)save {
     CoreDataStack *theCoreDataStack = [CoreDataStack defaultStack];
-    NSArray *listToInspect = self.fetchedResultsController.fetchedObjects;
     [theCoreDataStack saveContext];
+    [self fetch];
+    [self.viewController reloadData];
 }
 
 
 #pragma mark - Receipts Collection
 
 - (Receipts *)objectAtIndex:(NSIndexPath *)indexPath {
-    return [self.fetchedResultsController objectAtIndexPath:indexPath];
+    return self.receiptsCollection.allValues[indexPath.section][indexPath.row];
+}
+
+- (NSString *)getTitleForHeaderInSection:(NSInteger)section {
+    return self.receiptsCollection.allKeys[section];
 }
 
 - (NSInteger)numberOfSections {
-     return self.fetchedResultsController.sections.count;
+     return self.receiptsCollection.allKeys.count;
 }
 
 - (NSInteger)numberOfRowsForSection:(NSInteger)section {
-    return [self.fetchedResultsController.sections[section] numberOfObjects];
+    return [self.receiptsCollection.allValues[section] count];
 }
 
 - (NSString *)titleForHeaderInSection:(NSInteger)section {
-    return [self.fetchedResultsController.sections[section] name];
+    return self.receiptsCollection.allKeys[section];
 }
+
+#pragma mark - Dictionary Methods
+
+- (void)arrangeSections:(NSArray *)fetchedObjects {
+    
+    
+    NSDictionary *objectsInDict = [self arrangeThroughLists:fetchedObjects];
+    self.receiptsCollection = [[NSDictionary alloc] initWithDictionary:objectsInDict];
+}
+
+
+- (NSMutableDictionary *)arrangeThroughLists:(NSArray *)fetchedObjects {
+    
+    NSMutableDictionary *objectsInDict = [[NSMutableDictionary alloc] init];
+    
+    NSMutableSet *setOfTags = [[NSMutableSet alloc] init];
+    for (Receipts *aReceipts in fetchedObjects) {
+        NSMutableSet *tempSet = [[NSMutableSet alloc] init];
+        [tempSet unionSet:aReceipts.relationship];
+        [tempSet minusSet:setOfTags];
+        for (Tags *tag in tempSet) {
+            // add an item to the dict with the key tagname
+            [objectsInDict setObject:[[NSMutableArray alloc] init] forKey:tag.tagName];
+        }
+        
+        for (Tags *aTag in aReceipts.relationship) {
+            // add the receipt into the arrays
+            NSMutableArray *list = [objectsInDict objectForKey:aTag.tagName];
+            [list addObject:aReceipts];
+        }
+        
+        [setOfTags unionSet:tempSet];
+    }
+    
+    return objectsInDict;
+}
+
+- (BOOL)doesDictionary:(NSMutableDictionary *)dictionary containTag:(Tags *)aTag {
+    for (NSString *tagName in dictionary.allKeys) {
+        if (tagName == aTag.tagName) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
 
 @end

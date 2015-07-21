@@ -29,7 +29,7 @@
 
 - (void)setContent {
     // should round the number to 2 decimal places...
-    self.receiptAmountLabel.text = [NSString stringWithFormat:@"%f",self.receiptForCell.amount];
+    self.receiptAmountLabel.text = [NSString stringWithFormat:@"%.2f",self.receiptForCell.amount];
     
     NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
     [formatter setDateFormat:@"dd-MMM-yyyy"];

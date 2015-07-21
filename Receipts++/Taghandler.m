@@ -11,35 +11,33 @@
 
 @interface Taghandler () <NSFetchedResultsControllerDelegate>
 
-@property (nonatomic) NSFetchedResultsController *fetchedResultsController;
+@property (nonatomic) NSArray *fetchedTags;
 
 @end
 
 @implementation Taghandler
 
-- (instancetype)init {
-    self = [super init];
-    if (self) {
-        // move this to view did load of the controller...
-        [self.fetchedResultsController performFetch:nil];
-    }
-    return self;
-}
-
 #pragma mark FetchedResultsController
 
-- (NSFetchedResultsController *)fetchedResultsController {
-    if (_fetchedResultsController != nil) {
-        return _fetchedResultsController;
-    }
-    CoreDataStack *theCoreDateStack = [CoreDataStack defaultStack];
+
+- (void)fetch {
+    self.fetchedTags = [self requestObjects];
+    
+}
+
+
+- (NSArray *)requestObjects {
+    CoreDataStack *theCoreDataStack = [CoreDataStack defaultStack];
+    NSManagedObjectContext *managedObjectContext = theCoreDataStack.managedObjectContext;
+    
     NSFetchRequest *fetchRequest = [self entryListFetchRequest];
-    
-    // how do I section name by a relationship??
-    _fetchedResultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:fetchRequest managedObjectContext:theCoreDateStack.managedObjectContext sectionNameKeyPath:nil cacheName:nil];
-    _fetchedResultsController.delegate = self;
-    
-    return _fetchedResultsController;
+    NSError *error;
+    NSArray *fetchedObjects = [managedObjectContext executeFetchRequest:fetchRequest error:&error];
+    if (fetchedObjects == nil)
+    {
+        // Deal with error...
+    }
+    return fetchedObjects;
 }
 
 - (NSFetchRequest *)entryListFetchRequest {
@@ -48,46 +46,30 @@
     return fetchRequest;
 }
 
-- (void)controller:(NSFetchedResultsController *)controller didChangeObject:(id)anObject atIndexPath:(NSIndexPath *)indexPath forChangeType:(NSFetchedResultsChangeType)type newIndexPath:(NSIndexPath *)newIndexPath {
-    // call the controller to reload the table view
-    [self.viewController reloadData];
-}
-
-
-- (void)controller:(NSFetchedResultsController *)controller didChangeSection:(id<NSFetchedResultsSectionInfo>)sectionInfo atIndex:(NSUInteger)sectionIndex forChangeType:(NSFetchedResultsChangeType)type {
-    // call the controller to reload the table view
-    [self.viewController reloadData];
-}
-
-- (NSString *)getTitleForHeaderInSection:(NSInteger)section {
-    return [self.fetchedResultsController.sections[section] name];
-}
-
-- (void)fetch {
-    [self.fetchedResultsController performFetch:nil];
-}
-
 - (void)save {
     CoreDataStack *theCoreDataStack = [CoreDataStack defaultStack];
     [theCoreDataStack saveContext];
+    [self fetch];
+    [self.viewController reloadData];
 }
+
 
 #pragma mark - Receipts Collection
 
 - (Tags *)objectAtIndex:(NSIndexPath *)indexPath {
-    return [self.fetchedResultsController objectAtIndexPath:indexPath];
+    return self.fetchedTags[indexPath.row];
 }
 
 - (NSInteger)numberOfSections {
-    return self.fetchedResultsController.sections.count;
+    return 1;
 }
 
 - (NSInteger)numberOfRowsForSection:(NSInteger)section {
-    return [self.fetchedResultsController.sections[section] numberOfObjects];
+    return self.fetchedTags.count;
 }
 
 - (NSString *)titleForHeaderInSection:(NSInteger)section {
-    return [self.fetchedResultsController.sections[section] name];
+    return @"TAGS";
 }
 
 
